@@ -11,7 +11,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'chat_{self.room_name}'
-
+        print("here", self.channel_layer.group_add)
         # Join room group
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -30,11 +30,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         event_type = data.get('type')
-
         if event_type == 'message':
-            await self.handle_chat_message(data["message"])
+            await self.handle_chat_message(data)
         elif event_type == 'typing':
-            await self.handle_typing_notification(data["message"])
+            await self.handle_typing_notification(data)
 
     @database_sync_to_async
     def get_conversation(self, room_id):
@@ -45,7 +44,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async
-    def create_message(self, conversation, sender, message_content, attachment_picture, attachment_video):
+    def create_message(self, conversation, sender_id, message_content, attachment_picture, attachment_video):
+        sender = User.objects.get(id=sender_id)
         message = Message.objects.create(
             conversation=conversation,
             sender=sender,
@@ -73,9 +73,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if conversation is None:
                 raise ValueError("Conversation does not exist.")
 
-            sender = User.objects.get(id=sender_id)
-            message = await self.create_message(conversation, sender, message_content, attachment_picture, attachment_video)
-
+            message = await self.create_message(conversation, sender_id, message_content, attachment_picture, attachment_video)
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -84,7 +82,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
         except Exception as e:
-            pass
+            print(e)
 
     async def handle_typing_notification(self, data):
         conversation_id = data.get('conversation')
@@ -108,18 +106,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def chat_message(self, event):
         message = event['message']
+        image_url = message.attachment_picture.url if message.attachment_picture else None
+        video_url = message.attachment_video.url if message.attachment_video else None
         # Send the chat message to the WebSocket
         await self.send(text_data=json.dumps({
             'type': 'message',
-            'message': {
-                'id': message.id,
-                'conversation': message.conversation.id,
-                'sender_id': message.sender_id,
-                'message': message.text,
-                'attachment_picture': message.attachment_picture,
-                'attachment_video' : message.attachment_video,
-                'created_at': message.created_at.isoformat(),
-            }
+            'id': message.id,
+            'conversation': message.conversation.id,
+            'sender': message.sender_id,
+            'text': message.text,
+            'attachment_picture': image_url,
+            'attachment_video': video_url,
+            'created_at': message.created_at.isoformat(),
+
         }))
 
     async def typing_notification(self, event):

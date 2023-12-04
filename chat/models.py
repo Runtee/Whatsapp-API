@@ -2,11 +2,11 @@ from django.contrib.auth.models import User
 from django.db import models
 
 class Conversation(models.Model):
-    members = models.ManyToManyField(User, through='Member')
+    members = models.ManyToManyField(User, through='Member', related_name='conversations_as_member')
     type = models.CharField(max_length=5, choices=[("chat", "Chat"), ("group", "Group")], default="chat")
     name = models.CharField(max_length=255, null=True)
     description = models.TextField(null=True)
-    created_by = models.CharField(max_length=255, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='conversations_as_creator')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

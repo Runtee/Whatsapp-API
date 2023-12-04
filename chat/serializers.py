@@ -23,3 +23,7 @@ class ReceiverSerializer(serializers.ModelSerializer):
     class Meta:
         model = Receiver
         fields = '__all__'
+
+class ReadMessageSerializer(serializers.Serializer):
+    conversation_id = serializers.IntegerField()
+    message_ids = serializers.ListField(child=serializers.IntegerField())

@@ -13,7 +13,7 @@ class MessageAdmin(admin.ModelAdmin):
 
 class ConversationAdmin(admin.ModelAdmin):
     inlines = [MemberInline]
-    list_display = ('name', 'type', 'created_by', 'created_at', 'updated_at')
+    list_display = ('name', 'type', 'created_at', 'updated_at')
     list_filter = ('type',)
     search_fields = ('name', 'description', 'created_by')
 

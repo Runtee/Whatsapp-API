@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Messenger</title>
+    <style>
+        /* Add some basic styling for the chat messages */
+        .chat {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+    <input type="text" id="messageInput" placeholder="Type your message here...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        // Dummy data for testing
+        const conversationId = 1;
+        const userId = 1;
+        const socket = new WebSocket('ws://127.0.0.1:8000/ws/chat/1/');
+
+        // Function to add a new chat message to the UI
+        function addChatMessage(content) {
+            const chatDiv = document.getElementById('chat');
+            const newChatMessage = document.createElement('div');
+            newChatMessage.classList.add('chat');
+            newChatMessage.innerHTML = `<strong>${userId}: </strong>${content}`;
+            chatDiv.appendChild(newChatMessage);
+        }
+
+        // Function to send a message to the server via WebSocket
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const messageContent = messageInput.value.trim();
+            if (messageContent) {
+                // Send the message to the server
+                const message = {
+                    type: 'message',
+                    text: messageContent,
+                    conversation: conversationId,
+                    sender: userId,
+                };
+                socket.send(JSON.stringify(message));
+
+                // Clear the message input after sending
+                messageInput.value = '';
+            }
+        }
+
+        // Event listener for WebSocket connection open
+        socket.addEventListener('open', (event) => {
+            // Listen for messages from the server
+            socket.addEventListener('message', (event) => {
+                console.log(event);
+                const message = JSON.parse(event.data);
+                if (message.type === 'message') {
+                    // Display the received message in the UI
+                    addChatMessage(message.text);
+                }
+            });
+        });
+
+        // Simulate receiving a message from the server
+        function receiveMessage(messageContent) {
+            addChatMessage(messageContent);
+        }
+
+        // Dummy data to simulate receiving a message from the server
+        receiveMessage("Hello, how are you?");
+
+        // Listen for Enter key press to send a message
+        document.getElementById('messageInput').addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
