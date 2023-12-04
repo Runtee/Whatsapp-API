@@ -53,14 +53,15 @@ class LeaveChatroomView(generics.DestroyAPIView):
     """
     Use the conversation id and remove the user from the members folder.
     """
-    queryset = Member.objects.all()
+    # queryset = Member.objects.all()
     permission_classes = [IsAuthenticated]
 
-    def perform_destroy(self, instance):
+    def destroy(self, request, conversation_id):
         conversation_id = self.kwargs.get('conversation_id')
-        
         # Ensure the user is a member of the conversation
-        if not self.request.user.conversation_set.filter(id=conversation_id).exists():
+        conversation = Conversation.objects.get(id=conversation_id)
+        members = Member.objects.filter(conversation=conversation, user=request.user)
+        if not len(members) :
             return Response({"error": "User is not a member of the conversation"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Find the Member instance for the user in the specified conversation
@@ -121,19 +122,16 @@ class ReadMessageView(generics.GenericAPIView):
     def mark_messages_as_read(self, validated_data):
         try:
             # Get the conversation and message IDs from the validated data
-            conversation_id = validated_data['conversation_id']
             message_ids = validated_data['message_ids']
-
-            # Ensure the user is a member of the conversation
-            if not self.request.user.conversation_set.filter(id=conversation_id).exists():
-                return Response({'error': 'User is not a member of the conversation'}, status=status.HTTP_400_BAD_REQUEST)
-
             # Mark messages as read
             messages_to_mark = Message.objects.filter(id__in=message_ids, conversation__members=self.request.user)
             for message in messages_to_mark:
-                receiver = Receiver.objects.get(message=message, user=self.request.user)
-                receiver.read = True
-                receiver.save()
+                try:
+                    receiver = Receiver.objects.get(message=message, user=self.request.user)
+                    receiver.read = True
+                    receiver.save()
+                except Receiver.DoesNotExist:
+                    pass
 
             return Response({'success': True})
         except Exception as e:

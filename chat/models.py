@@ -11,8 +11,8 @@ class Conversation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class Member(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='members')
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
