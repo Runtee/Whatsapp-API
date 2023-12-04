@@ -2,9 +2,8 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import models
-from django.http import JsonResponse
 from .models import Conversation, Member, Message, Receiver
-from .serializers import ConversationSerializer, MessageSerializer, MemberSerializer, ReceiverSerializer, ReadMessageSerializer
+from .serializers import ConversationSerializer, MessageSerializer, MemberSerializer, ReadMessageSerializer
 
 class CreateChatroomView(generics.CreateAPIView):
     serializer_class = ConversationSerializer
